@@ -1,18 +1,50 @@
 from playwright.sync_api import sync_playwright
 import json
+import os
+import sys
 import time
+from dotenv import load_dotenv
+
+# Evita que prints com caracteres especiais (✓, ✅) quebrem em consoles
+# Windows cuja codificacao padrao nao suporta unicode - isso mascarava
+# erros reais (ex: um clique bem-sucedido sendo reportado como falho).
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+load_dotenv()
 
 BASE_URL = "https://painel.newbr.top"
 USERNAME = "login_suporte"
 PASSWORD = "Senha+TV26"
 
+# Proxy opcional. Preencha PROXY_SERVER no .env (ex: http://host:porta) e,
+# se o proxy exigir autenticacao, PROXY_USERNAME / PROXY_PASSWORD.
+PROXY_SERVER = os.getenv("PROXY_SERVER")
+PROXY_USERNAME = os.getenv("PROXY_USERNAME")
+PROXY_PASSWORD = os.getenv("PROXY_PASSWORD")
+
+def build_proxy_config():
+    if not PROXY_SERVER:
+        return None
+    proxy = {"server": PROXY_SERVER}
+    if PROXY_USERNAME:
+        proxy["username"] = PROXY_USERNAME
+    if PROXY_PASSWORD:
+        proxy["password"] = PROXY_PASSWORD
+    return proxy
+
 def login_and_get_token():
+    proxy_config = build_proxy_config()
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"]
-        )
-        
+        launch_kwargs = {
+            "headless": True,
+            "args": ["--disable-blink-features=AutomationControlled"],
+        }
+        if proxy_config:
+            launch_kwargs["proxy"] = proxy_config
+            print(f"[*] Usando proxy: {proxy_config['server']}")
+
+        browser = p.chromium.launch(**launch_kwargs)
+
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
             viewport={"width": 1366, "height": 768},
@@ -112,7 +144,7 @@ def login_and_get_token():
                 el = page.locator(sel).first
                 if el.is_visible(timeout=3000):
                     username_input = el
-                    print(f"[✓] Campo usuário encontrado com: {sel}")
+                    print(f"[OK] Campo usuário encontrado com: {sel}")
                     break
             except:
                 continue
@@ -142,6 +174,7 @@ def login_and_get_token():
 
         # Clica no botão
         button_selectors = [
+            'button:has-text("Continuar")',
             'button:has-text("Entrar")',
             'button:has-text("Login")',
             'button:has-text("Acessar")',
@@ -156,8 +189,8 @@ def login_and_get_token():
                 btn = page.locator(sel).first
                 if btn.is_visible(timeout=2000):
                     btn.click()
-                    print(f"[✓] Botão clicado com: {sel}")
                     clicked = True
+                    print(f"[OK] Botão clicado com: {sel}")
                     break
             except:
                 continue

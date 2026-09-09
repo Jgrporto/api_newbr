@@ -1,6 +1,10 @@
+import os
 import requests
 import json
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ============================================================
 # CONFIGURAÇÕES
@@ -10,6 +14,13 @@ LOGIN_URL = f"{BASE_URL}/api/auth/login"
 
 USERNAME = "login_suporte"
 PASSWORD = "Senha+TV26"
+
+# Proxy opcional. Preencha PROXY_URL no .env, no formato:
+#   http://usuario:senha@host:porta
+# (para HTTPS via proxy HTTP, mantenha o esquema "http://" na URL mesmo
+# fazendo requisicoes para um site HTTPS - o requests cuida do CONNECT).
+PROXY_URL = os.getenv("PROXY_URL")
+PROXIES = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
 
 # Headers baseados no que você capturou
 HEADERS = {
@@ -48,11 +59,14 @@ def login() -> Optional[str]:
     # session.cookies.set("cf_clearance", "SEU_CF_CLEARANCE_AQUI", domain="painel.newbr.top")
 
     print("[*] Fazendo login...")
+    if PROXIES:
+        print(f"[*] Usando proxy: {PROXY_URL}")
     try:
         response = session.post(
             LOGIN_URL,
             json=PAYLOAD,
-            timeout=30
+            timeout=30,
+            proxies=PROXIES,
         )
     except requests.exceptions.RequestException as e:
         print(f"[!] Erro de conexão: {e}")
@@ -135,7 +149,7 @@ def test_token(token: str):
     headers["Authorization"] = f"Bearer {token}"
 
     print("[*] Testando token em /api/auth/me ...")
-    r = requests.get(f"{BASE_URL}/api/auth/me", headers=headers, timeout=20)
+    r = requests.get(f"{BASE_URL}/api/auth/me", headers=headers, timeout=20, proxies=PROXIES)
 
     if r.status_code == 200:
         print("[✓] Token válido!")
