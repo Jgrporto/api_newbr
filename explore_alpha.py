@@ -30,9 +30,10 @@ LOGIN_URL = f"{BASE_URL}/api/auth/login"
 USERNAME = os.getenv("ALPHA_USERNAME", "Danilo123")
 PASSWORD = os.getenv("ALPHA_PASSWORD", "URxdZlwjAQ3572!")
 
-# Proxy opcional (mesmo formato usado em login_newbr.py). Deixe vazio no
-# .env para nao usar.
-PROXY_URL = os.getenv("PROXY_URL")
+# Proxy opcional, dedicado a este script (nao reaproveita PROXY_URL do
+# login_newbr.py, que e' de outro dominio). Deixe vazio/ausente no .env
+# para nao usar proxy nenhum.
+PROXY_URL = os.getenv("ALPHA_PROXY_URL")
 PROXIES = {"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None
 
 OUTPUT_DIR = Path(__file__).parent / "output" / "alpha"
